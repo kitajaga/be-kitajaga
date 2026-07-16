@@ -172,7 +172,7 @@ export async function runMatching(bookingId: string): Promise<void> {
         } catch (err) {
           logger.error(`Error in matching timeout handler for booking ${bookingId}:`, err);
         }
-      }, 30000);
+      }, 300000); // 5 minutes timeout for manual testing comfort
 
       matchingTimeouts.set(bookingId, timeout);
     } else {
