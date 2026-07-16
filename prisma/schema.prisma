@@ -1,0 +1,209 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────
+
+enum UserRole {
+  user
+  caregiver
+}
+
+enum BookingType {
+  immediate
+  scheduled
+}
+
+enum BookingStatus {
+  pending_matching
+  matched
+  paid
+  scheduled
+  in_progress
+  completed
+  reported
+  rescheduling
+  reschedule_failed
+  payment_failed
+  disputed
+  cancelled
+}
+// NOTE: caregiver_no_show SENGAJA TIDAK ADA di enum ini.
+// Reschedule hanya trigger dari aksi manual (user/caregiver klik cancel),
+// tidak ada auto-detection no-show. Lihat DECISIONS.md.
+
+enum PaymentStatus {
+  pending
+  held
+  released
+  refunded
+  failed
+}
+
+enum ProgressStatus {
+  heading_to_patient
+  picked_up_patient
+  heading_to_facility
+  arrived_registration
+  waiting_in_queue
+  in_consultation
+  heading_back
+  completed
+}
+
+// ─── Models ──────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  phone        String
+  passwordHash String
+  role         UserRole
+  createdAt    DateTime  @default(now())
+
+  patients         Patient[]
+  bookingsAsUser   Booking[]  @relation("UserBookings")
+  caregiverProfile Caregiver?
+}
+
+model Patient {
+  id                    String   @id @default(uuid())
+  userId                String
+  user                  User     @relation(fields: [userId], references: [id])
+  name                  String
+  dateOfBirth           DateTime
+  gender                String
+  address               String
+  latitude              Float
+  longitude             Float
+  mobilityStatus        String
+  allergies             String[]
+  currentMedications    Json
+  medicalNotes          String?
+  riskLevel             String   @default("low") // 'low' | 'high' — badge warning UI saja, bukan gating logic (DECISIONS.md)
+  emergencyContactName  String
+  emergencyContactPhone String
+
+  bookings   Booking[]
+  guidebooks Guidebook[]
+}
+
+model Caregiver {
+  id                     String   @id @default(uuid())
+  userId                 String   @unique
+  user                   User     @relation(fields: [userId], references: [id])
+  photoUrl               String?
+  availabilityStatus     String   @default("offline") // online | offline | busy
+  currentLatitude        Float?
+  currentLongitude       Float?
+  workingRadiusKm        Int      @default(10)
+  averageRating          Float    @default(0)
+  totalCompletedBookings Int      @default(0)
+  rescheduleCount        Int      @default(0)
+  verificationStatus     String   @default("pending")
+
+  bookings Booking[]
+}
+// NOTE: noShowCount SENGAJA TIDAK ADA — konsisten dengan tidak adanya no-show handling (DECISIONS.md).
+
+model Booking {
+  id                  String        @id @default(uuid())
+  userId              String
+  user                User          @relation("UserBookings", fields: [userId], references: [id])
+  patientId           String
+  patient             Patient       @relation(fields: [patientId], references: [id])
+  caregiverId         String?
+  caregiver           Caregiver?    @relation(fields: [caregiverId], references: [id])
+  previousCaregiverId String?
+  bookingType         BookingType
+  scheduledAt         DateTime?
+  facilityName        String?
+  facilityAddress     String?
+  facilityLatitude    Float?
+  facilityLongitude   Float?
+  status              BookingStatus @default(pending_matching)
+  rescheduleReason    String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  payment      Payment?
+  guidebook    Guidebook?
+  report       Report?
+  chats        Chat[]
+  trackingLogs TrackingLog[]
+  progress     BookingProgress[]
+}
+
+model Payment {
+  id                    String        @id @default(uuid())
+  bookingId             String        @unique
+  booking               Booking       @relation(fields: [bookingId], references: [id])
+  amount                Int
+  status                PaymentStatus @default(pending)
+  midtransTransactionId String?
+  snapToken             String?
+  snapRedirectUrl       String?
+  paidAt                DateTime?
+  releasedAt            DateTime?
+}
+
+model Guidebook {
+  id                      String   @id @default(uuid())
+  patientId               String
+  patient                 Patient  @relation(fields: [patientId], references: [id])
+  bookingId               String   @unique
+  booking                 Booking  @relation(fields: [bookingId], references: [id])
+  content                 Json
+  generatedAt             DateTime @default(now())
+  acknowledgedByCaregiver Boolean  @default(false)
+  acknowledgedAt          DateTime?
+}
+
+model Report {
+  id               String   @id @default(uuid())
+  bookingId        String   @unique
+  booking          Booking  @relation(fields: [bookingId], references: [id])
+  notes            String
+  conditionSummary String
+  rating           Int?
+  ratingNotes      String?
+  createdAt        DateTime @default(now())
+}
+
+model Chat {
+  id        String   @id @default(uuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  senderId  String   // bisa 'system' untuk auto-message dari progress update
+  message   String
+  photoUrl  String?  // untuk upload foto di chat (PRD.md: "Dapat mengupload foto di chat")
+  sentAt    DateTime @default(now())
+}
+
+model TrackingLog {
+  id        String   @id @default(uuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  latitude  Float
+  longitude Float
+  timestamp DateTime @default(now())
+}
+
+model BookingProgress {
+  id        String         @id @default(uuid())
+  bookingId String
+  booking   Booking        @relation(fields: [bookingId], references: [id])
+  status    ProgressStatus
+  latitude  Float
+  longitude Float
+  photoUrl  String?        // wajib diisi untuk checkpoint tertentu (picked_up_patient, arrived_registration, in_consultation, completed) — DECISIONS.md
+  note      String?
+  createdAt DateTime       @default(now())
+}
