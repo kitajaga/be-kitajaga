@@ -1,0 +1,21 @@
+meta {
+  name: Reschedule Booking
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{base_url}}/bookings/{{booking_id}}/reschedule
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "reason": "Ada urusan darurat keluarga"
+  }
+}

@@ -1,0 +1,22 @@
+meta {
+  name: Update Location
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{base_url}}/caregivers/me/location
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "latitude": -6.195,
+    "longitude": 106.832
+  }
+}

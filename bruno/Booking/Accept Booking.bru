@@ -1,0 +1,15 @@
+meta {
+  name: Accept Booking
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/bookings/{{booking_id}}/accept
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
