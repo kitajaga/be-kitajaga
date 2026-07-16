@@ -1,0 +1,27 @@
+meta {
+  name: Create Booking
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/bookings
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "patientId": "{{patient_id}}",
+    "bookingType": "scheduled",
+    "scheduledAt": "2026-07-20T09:00:00Z",
+    "facilityName": "RSCM Jakarta",
+    "facilityAddress": "Jl. Diponegoro No.71, Jakarta",
+    "facilityLatitude": -6.1865,
+    "facilityLongitude": 106.8442
+  }
+}

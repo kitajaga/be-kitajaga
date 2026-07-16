@@ -1,0 +1,22 @@
+meta {
+  name: Update Patient
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{base_url}}/patients/{{patient_id}}
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "mobilityStatus": "mobile",
+    "patientNote": "Kondisi diabetes membaik, tetap awasi pola makan."
+  }
+}

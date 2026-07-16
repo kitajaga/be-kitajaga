@@ -1,0 +1,35 @@
+meta {
+  name: Create Patient
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/patients
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{token}}
+}
+
+body:json {
+  {
+    "name": "Budi Santoso",
+    "dateOfBirth": "1958-03-12",
+    "gender": "male",
+    "address": "Jl. Menteng Raya No.10, Jakarta",
+    "latitude": -6.195,
+    "longitude": 106.832,
+    "mobilityStatus": "assisted",
+    "allergies": ["Diabetes", "Debu"],
+    "currentMedications": ["Metformin 500mg"],
+    "patientNote": "Mengidap diabetes, sering lupa minum obat sore.",
+    "riskLevel": "low",
+    "emergencyContact": {
+      "name": "Rina",
+      "phone": "081298765432"
+    }
+  }
+}
