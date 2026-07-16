@@ -9,6 +9,10 @@
     {
       "url": "http://localhost:4000/api",
       "description": "Server Development Lokal"
+    },
+    {
+      "url": "https://be-kitajaga-production.up.railway.app/api",
+      "description": "Server Production (Railway)"
     }
   ],
   "paths": {
