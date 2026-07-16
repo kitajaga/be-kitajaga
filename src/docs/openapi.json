@@ -1,0 +1,669 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Kitajaga On-Demand Caregiver API",
+    "description": "Dokumentasi API interaktif untuk backend aplikasi Kitajaga. Dibuat menggunakan spesifikasi OpenAPI 3.0 dan dirender dengan Scalar API Reference. Base URL untuk development lokal adalah `http://localhost:4000/api`.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4000/api",
+      "description": "Server Development Lokal"
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Pendaftaran User baru",
+        "description": "Mendaftarkan pengguna baru dengan role `user` atau `caregiver`. Jika mendaftar sebagai `caregiver`, profil caregiver offline akan otomatis dibuat di database.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "phone", "password", "role"],
+                "properties": {
+                  "name": { "type": "string", "example": "Zaki Ibrahim" },
+                  "email": { "type": "string", "format": "email", "example": "zaki@mail.com" },
+                  "phone": { "type": "string", "example": "081234567890" },
+                  "password": { "type": "string", "example": "password123" },
+                  "role": { "type": "string", "enum": ["user", "caregiver"], "example": "user" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Pendaftaran berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string", "format": "uuid" },
+                        "name": { "type": "string" },
+                        "role": { "type": "string" },
+                        "token": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Login Pengguna",
+        "description": "Masuk ke sistem menggunakan email dan password untuk mendapatkan JWT token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email", "example": "zaki@mail.com" },
+                  "password": { "type": "string", "example": "password123" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string", "format": "uuid" },
+                        "role": { "type": "string" },
+                        "token": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patients": {
+      "post": {
+        "tags": ["Patient Management"],
+        "summary": "Membuat Data Pasien",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "dateOfBirth", "gender", "address", "latitude", "longitude", "mobilityStatus", "emergencyContact"],
+                "properties": {
+                  "name": { "type": "string", "example": "Budi Santoso" },
+                  "dateOfBirth": { "type": "string", "format": "date", "example": "1958-03-12" },
+                  "gender": { "type": "string", "enum": ["male", "female"], "example": "male" },
+                  "address": { "type": "string", "example": "Jl. Menteng Raya No.10, Jakarta" },
+                  "latitude": { "type": "number", "example": -6.195 },
+                  "longitude": { "type": "number", "example": 106.832 },
+                  "mobilityStatus": { "type": "string", "enum": ["independent", "assisted", "wheelchair", "immobile", "bedridden"], "example": "assisted" },
+                  "allergies": { "type": "array", "items": { "type": "string" }, "example": ["Diabetes", "Debu"] },
+                  "currentMedications": { "type": "array", "items": { "type": "string" }, "example": ["Metformin 500mg"] },
+                  "patientNote": { "type": "string", "example": "Mengidap diabetes, sering lupa minum obat sore." },
+                  "emergencyContact": {
+                    "type": "object",
+                    "required": ["name", "phone"],
+                    "properties": {
+                      "name": { "type": "string", "example": "Rina" },
+                      "phone": { "type": "string", "example": "081298765432" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Pasien berhasil dibuat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string", "format": "uuid" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Patient Management"],
+        "summary": "Mengambil Daftar Pasien",
+        "description": "Mengambil seluruh daftar pasien milik client user yang sedang login.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Daftar pasien ditemukan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string", "format": "uuid" },
+                          "name": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patients/{id}": {
+      "get": {
+        "tags": ["Patient Management"],
+        "summary": "Mengambil Detail Pasien",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detail pasien ditemukan"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Patient Management"],
+        "summary": "Memperbarui Data Pasien",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "address": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Pasien berhasil diperbarui"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Patient Management"],
+        "summary": "Menghapus Data Pasien",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pasien berhasil dihapus"
+          }
+        }
+      }
+    },
+    "/bookings": {
+      "post": {
+        "tags": ["Booking Management"],
+        "summary": "Membuat Booking Baru",
+        "description": "Membuat pemesanan caregiver on-demand. Tipe booking dapat berupa `immediate` (langsung dicari terdekat) atau `scheduled` (berjadwal). Ketika booking dibuat, Guidebook medis pasien otomatis ter-generate via OpenAI GPT.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["patientId", "bookingType"],
+                "properties": {
+                  "patientId": { "type": "string", "format": "uuid", "example": "patient-uuid-here" },
+                  "bookingType": { "type": "string", "enum": ["immediate", "scheduled"], "example": "immediate" },
+                  "scheduledAt": { "type": "string", "format": "date-time", "example": "2026-07-15T09:00:00Z" },
+                  "facilityName": { "type": "string", "example": "RSCM Jakarta" },
+                  "facilityAddress": { "type": "string", "example": "Jl. Diponegoro No.71, Jakarta" },
+                  "facilityLatitude": { "type": "number", "example": -6.1865 },
+                  "facilityLongitude": { "type": "number", "example": 106.8442 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Booking berhasil dibuat"
+          }
+        }
+      },
+      "get": {
+        "tags": ["Booking Management"],
+        "summary": "Mengambil Daftar Booking",
+        "description": "Mengambil daftar booking. Jika login sebagai `user`, mengembalikan daftar pemesanan milik user tersebut. Jika login sebagai `caregiver`, mengembalikan daftar tugas miliknya serta tawaran pekerjaan terdekat.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Daftar booking ditemukan"
+          }
+        }
+      }
+    },
+    "/bookings/{id}": {
+      "get": {
+        "tags": ["Booking Management"],
+        "summary": "Detail Booking",
+        "description": "Mengambil detail informasi booking. Respon disesuaikan secara otomatis berdasarkan role pengguna (User vs Caregiver).",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detail booking ditemukan"
+          }
+        }
+      }
+    },
+    "/bookings/{id}/accept": {
+      "post": {
+        "tags": ["Booking Management"],
+        "summary": "Menerima Booking (Caregiver Only)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Booking berhasil diterima"
+          }
+        }
+      }
+    },
+    "/bookings/{id}/reschedule": {
+      "post": {
+        "tags": ["Booking Management"],
+        "summary": "Reschedule Booking",
+        "description": "Mengajukan penjadwalan ulang secara manual. Caregiver aktif akan di-unassign dan Matching Engine akan otomatis mencari caregiver baru (mengabaikan caregiver lama).",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": { "type": "string", "example": "Pasien memiliki jadwal mendadak" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reschedule berhasil diproses"
+          }
+        }
+      }
+    },
+    "/bookings/{id}/cancel": {
+      "post": {
+        "tags": ["Booking Management"],
+        "summary": "Membatalkan Booking",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Booking berhasil dibatalkan"
+          }
+        }
+      }
+    },
+    "/bookings/{id}/progress": {
+      "post": {
+        "tags": ["Progress Tracking"],
+        "summary": "Mengirim Update Progress Checkpoint (Caregiver Only)",
+        "description": "Mengirim data checkpoint aktivitas caregiver saat mengantar pasien. Status tertentu (`picked_up_patient`, `arrived_registration`, `in_consultation`, `completed`) wajib menyertakan URL foto bukti.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["status", "latitude", "longitude"],
+                "properties": {
+                  "status": { "type": "string", "enum": ["heading_to_patient", "picked_up_patient", "heading_to_facility", "arrived_registration", "waiting_in_queue", "in_consultation", "heading_back", "completed"], "example": "picked_up_patient" },
+                  "latitude": { "type": "number", "example": -6.195 },
+                  "longitude": { "type": "number", "example": 106.832 },
+                  "note": { "type": "string", "example": "Pasien sudah masuk ke ambulans/mobil" },
+                  "photoUrl": { "type": "string", "example": "http://photo.com/picked.jpg" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Progress checkpoint berhasil dicatat"
+          },
+          "400": {
+            "description": "Foto bukti wajib untuk status ini"
+          }
+        }
+      },
+      "get": {
+        "tags": ["Progress Tracking"],
+        "summary": "Mengambil Riwayat Progress Checkpoint",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Riwayat progress berhasil ditemukan"
+          }
+        }
+      }
+    },
+    "/bookings/{id}/report": {
+      "post": {
+        "tags": ["Report & Rating"],
+        "summary": "Submit Laporan Medis (Caregiver Only)",
+        "description": "Caregiver mengirim laporan medis akhir setelah selesai mengantar pasien. Status booking otomatis bergeser ke `reported`.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["notes", "conditionSummary"],
+                "properties": {
+                  "notes": { "type": "string", "example": "Obat sore sudah diberikan. Pasien perlu istirahat cukup." },
+                  "conditionSummary": { "type": "string", "example": "Suhu tubuh 36.5C, tensi darah normal 120/80." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Laporan medis berhasil dikirim"
+          }
+        }
+      }
+    },
+    "/bookings/{id}/rate": {
+      "post": {
+        "tags": ["Report & Rating"],
+        "summary": "Submit Rating & Review (User Only)",
+        "description": "User memberikan rating dan review ulasan untuk caregiver. Pemicu otomatis proses **escrow payment release** (status pembayaran bergeser ke `released`). Profil rating rata-rata caregiver akan langsung diperbarui.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["rating"],
+                "properties": {
+                  "rating": { "type": "integer", "minimum": 1, "maximum": 5, "example": 5 },
+                  "review": { "type": "string", "example": "Suster Rina sangat sabar dan tepat waktu." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rating berhasil disimpan dan escrow dana dicairkan"
+          }
+        }
+      }
+    },
+    "/payments/charge": {
+      "post": {
+        "tags": ["Payment Integration"],
+        "summary": "Request Pembayaran Midtrans Snap",
+        "description": "Membuat order tagihan pembayaran flat Rp 150.000 untuk booking tertentu. Mengembalikan token Snap Sandbox dan URL redirect pembayaran asli dari Midtrans.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["bookingId"],
+                "properties": {
+                  "bookingId": { "type": "string", "format": "uuid", "example": "booking-uuid-here" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Snap token berhasil di-request"
+          }
+        }
+      }
+    },
+    "/payments/webhook": {
+      "post": {
+        "tags": ["Payment Integration"],
+        "summary": "Midtrans Payment Webhook",
+        "description": "Callback endpoint yang dipanggil oleh server Midtrans untuk memperbarui status pembayaran (`settlement` -> `held` escrow). Verifikasi signature key SHA512 berjalan di endpoint ini.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook berhasil diproses"
+          }
+        }
+      }
+    },
+    "/payments/{bookingId}/status": {
+      "get": {
+        "tags": ["Payment Integration"],
+        "summary": "Mengecek Status Pembayaran Escrow",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "bookingId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status pembayaran ditemukan"
+          }
+        }
+      }
+    },
+    "/guidebooks/{bookingId}": {
+      "get": {
+        "tags": ["Guidebook AI"],
+        "summary": "Mengambil Guidebook Medis Pasien",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "bookingId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Guidebook ditemukan"
+          }
+        }
+      }
+    },
+    "/guidebooks/{id}/acknowledge": {
+      "post": {
+        "tags": ["Guidebook AI"],
+        "summary": "Acknowledge Guidebook (Caregiver Only)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["acknowledged"],
+                "properties": {
+                  "acknowledged": { "type": "boolean", "example": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Acknowledge berhasil dicatat"
+          }
+        }
+      }
+    },
+    "/caregivers/me": {
+      "get": {
+        "tags": ["Caregiver Profile"],
+        "summary": "Profil Caregiver",
+        "description": "Mengambil detail informasi profil caregiver yang sedang login.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Profil caregiver ditemukan"
+          }
+        }
+      }
+    },
+    "/caregivers/me/status": {
+      "patch": {
+        "tags": ["Caregiver Profile"],
+        "summary": "Toggle Status Aktif Caregiver",
+        "description": "Mengubah status availability caregiver (`online` atau `offline`). Caregiver dilarang go offline jika sedang memiliki booking aktif bertatus `in_progress`.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["status"],
+                "properties": {
+                  "status": { "type": "string", "enum": ["online", "offline"], "example": "online" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status caregiver berhasil diubah"
+          }
+        }
+      }
+    },
+    "/caregivers/me/location": {
+      "patch": {
+        "tags": ["Caregiver Profile"],
+        "summary": "Update Lokasi GPS Caregiver",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["latitude", "longitude"],
+                "properties": {
+                  "latitude": { "type": "number", "example": -6.195 },
+                  "longitude": { "type": "number", "example": 106.832 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Lokasi caregiver berhasil diperbarui"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Masukkan JWT access token hasil dari endpoint register/login."
+      }
+    }
+  }
+}

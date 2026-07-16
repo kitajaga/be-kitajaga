@@ -4,6 +4,7 @@ import { success, error } from '../utils/apiResponse';
 import { getDistanceKm } from '../utils/distance';
 import { runMatching, clearMatchingTimeout } from '../services/matching.service';
 import { transitionBooking } from '../services/booking.service';
+import { generateGuidebook } from '../services/guidebook.service';
 import { BookingStatus, BookingType } from '@prisma/client';
 
 export async function create(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -69,6 +70,9 @@ export async function create(req: Request, res: Response, next: NextFunction): P
         },
       },
     });
+
+    // Generate guidebook for the booking
+    await generateGuidebook(booking.id);
 
     // Trigger matching engine asynchronously
     runMatching(booking.id);
