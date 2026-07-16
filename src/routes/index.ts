@@ -1,14 +1,16 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
+import authRoutes from './auth.routes';
+import { authMiddleware } from '../middlewares/auth.middleware';
+import { roleGuard } from '../middlewares/role.middleware';
 
 const router = Router();
 
 // Health check
-router.get('/health', (_req, res) => {
+router.get('/health', (_req: Request, res: Response) => {
   res.json({ success: true, data: { status: 'ok', timestamp: new Date().toISOString() } });
 });
 
-// Route modules will be registered here as they are built:
-// router.use('/auth', authRoutes);
+router.use('/auth', authRoutes);
 // router.use('/patients', patientRoutes);
 // router.use('/bookings', bookingRoutes);
 // router.use('/caregivers', caregiverRoutes);

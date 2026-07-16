@@ -1,0 +1,21 @@
+meta {
+  name: Register Caregiver
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/auth/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Suster Rina",
+    "email": "rina@mail.com",
+    "phone": "081298765432",
+    "password": "password123",
+    "role": "caregiver"
+  }
+}
