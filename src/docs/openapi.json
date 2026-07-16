@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Kitajaga On-Demand Caregiver API",
-    "description": "Dokumentasi API interaktif untuk backend aplikasi Kitajaga. Dibuat menggunakan spesifikasi OpenAPI 3.0 dan dirender dengan Scalar API Reference. Base URL untuk development lokal adalah `http://localhost:4000/api`.",
+    "description": "Dokumentasi API interaktif untuk backend aplikasi Kitajaga. Dibuat menggunakan spesifikasi OpenAPI 3.0 dan dirender dengan Scalar API Reference. Base URL untuk development lokal adalah `http://localhost:4000/api`.\n\n### 🌐 Panduan Integrasi WebSocket (Socket.IO)\nLayanan chat realtime & progress updates menggunakan protocol WebSocket (Socket.IO v4).\n\n#### 1. Koneksi\n* **Production URL**: `wss://be-kitajaga-production.up.railway.app` (gunakan port HTTPS standar 443)\n* **Lokal URL**: `ws://localhost:4000`\n* **Authentication**: Mengirimkan JWT token pada object `auth` atau header `token` saat handshake:\n  ```javascript\n  const socket = io(\"https://be-kitajaga-production.up.railway.app\", {\n    auth: {\n      token: \"jwt_token_di_sini\"\n    }\n  });\n  ```\n\n#### 2. Event: Client ➡️ Server\n* **`join_booking`**: Bergabung ke room chat booking tertentu.\n  * Payload: `bookingId` (string/uuid).\n* **`send_message`**: Mengirim pesan chat baru ke room.\n  * Payload:\n    ```json\n    {\n      \"bookingId\": \"uuid-booking\",\n      \"message\": \"Halo, saya sudah sampai\",\n      \"photoUrl\": \"optional-link-foto.jpg\"\n    }\n    ```\n\n#### 3. Event: Server ➡️ Client\n* **`new_message`**: Menerima chat message baru atau notifikasi sistem di room.\n  * **Payload Chat Message**:\n    ```json\n    {\n      \"id\": \"uuid-pesan\",\n      \"bookingId\": \"uuid-booking\",\n      \"senderId\": \"uuid-pengirim\",\n      \"senderRole\": \"user | caregiver\",\n      \"message\": \"Halo\",\n      \"photoUrl\": null,\n      \"sentAt\": \"2026-07-15T09:00:00Z\",\n      \"type\": \"text\"\n    }\n    ```\n  * **Payload System Progress Message** (Auto-generated saat caregiver update progress):\n    ```json\n    {\n      \"id\": \"uuid-pesan\",\n      \"bookingId\": \"uuid-booking\",\n      \"senderId\": \"system\",\n      \"senderRole\": \"system\",\n      \"message\": \"📍 Update: Caregiver menuju fasilitas kesehatan\",\n      \"photoUrl\": \"optional-link-foto-checkpoint.jpg\",\n      \"sentAt\": \"2026-07-15T09:05:00Z\",\n      \"type\": \"progress_update\",\n      \"meta\": {\n        \"status\": \"heading_to_facility\",\n        \"latitude\": -6.19,\n        \"longitude\": 106.84,\n        \"photoUrl\": \"optional-link-foto-checkpoint.jpg\"\n      }\n    }\n    ```\n* **`progress_update`**: Menerima data marker realtime (Leaflet map tracking).\n  * Payload:\n    ```json\n    {\n      \"bookingId\": \"uuid\",\n      \"status\": \"heading_to_facility\",\n      \"statusLabel\": \"Menuju fasilitas kesehatan\",\n      \"latitude\": -6.19,\n      \"longitude\": 106.84,\n      \"photoUrl\": \"optional-link-foto.jpg\",\n      \"createdAt\": \"2026-07-15T09:12:00Z\"\n    }\n    ```",
     "version": "1.0.0"
   },
   "servers": [
@@ -68,7 +68,7 @@
     "/auth/login": {
       "post": {
         "tags": ["Authentication"],
-        "summary": "Login Pengguna",
+        "summary": "Login Pengguna (General)",
         "description": "Masuk ke sistem menggunakan email dan password untuk mendapatkan JWT token.",
         "requestBody": {
           "required": true,
@@ -87,25 +87,61 @@
         },
         "responses": {
           "200": {
-            "description": "Login berhasil",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": { "type": "boolean", "example": true },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "id": { "type": "string", "format": "uuid" },
-                        "role": { "type": "string" },
-                        "token": { "type": "string" }
-                      }
-                    }
-                  }
+            "description": "Login berhasil"
+          }
+        }
+      }
+    },
+    "/auth/login-user": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Login khusus User Client",
+        "description": "Helper endpoint khusus untuk mempermudah login User Client (Zaki Ibrahim) saat testing di Scalar.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email", "example": "zaki@mail.com" },
+                  "password": { "type": "string", "example": "password123" }
                 }
               }
             }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login berhasil"
+          }
+        }
+      }
+    },
+    "/auth/login-caregiver": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Login khusus Caregiver",
+        "description": "Helper endpoint khusus untuk mempermudah login Caregiver (Suster Rina) saat testing di Scalar.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email", "example": "rina@mail.com" },
+                  "password": { "type": "string", "example": "password123" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login berhasil"
           }
         }
       }
@@ -372,6 +408,22 @@
         }
       }
     },
+    "/bookings/{id}/chats": {
+      "get": {
+        "tags": ["Booking Management"],
+        "summary": "Mengambil Riwayat Chat (Chat History)",
+        "description": "Mengambil daftar seluruh riwayat pesan percakapan (termasuk update sistem progress) dari booking ini, diurutkan dari pesan terlama ke terbaru. Digunakan frontend untuk melakukan restore percakapan saat pertama kali membuka room chat.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar riwayat chat berhasil ditemukan"
+          }
+        }
+      }
+    },
     "/bookings/{id}/progress": {
       "post": {
         "tags": ["Progress Tracking"],
@@ -529,6 +581,32 @@
         "responses": {
           "200": {
             "description": "Webhook berhasil diproses"
+          }
+        }
+      }
+    },
+    "/payments/mock-settle": {
+      "post": {
+        "tags": ["Payment Integration"],
+        "summary": "Bypass Pembayaran (Mock Settle Helper)",
+        "description": "Helper API untuk mensimulasikan status pembayaran sukses (settlement) secara instan tanpa perlu memproses credit card/QRIS Midtrans asli atau mem-bypass signature key. Cocok digunakan saat demo/testing.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["bookingId"],
+                "properties": {
+                  "bookingId": { "type": "string", "format": "uuid", "example": "booking-uuid-here" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Pembayaran sukses disimulasikan"
           }
         }
       }

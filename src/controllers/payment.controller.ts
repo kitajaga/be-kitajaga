@@ -215,3 +215,53 @@ export async function getStatus(req: Request, res: Response, next: NextFunction)
     next(err);
   }
 }
+
+export async function mockSettle(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { bookingId } = req.body;
+
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+    });
+
+    if (!booking) {
+      error(res, 'Booking tidak ditemukan', 'NOT_FOUND', 404);
+      return;
+    }
+
+    // Update payment record to held
+    await prisma.payment.upsert({
+      where: { bookingId },
+      update: {
+        status: PaymentStatus.held,
+        paidAt: new Date(),
+        midtransTransactionId: `mock-tx-${bookingId}`,
+      },
+      create: {
+        bookingId,
+        amount: FLAT_RATE_AMOUNT,
+        status: PaymentStatus.held,
+        paidAt: new Date(),
+        midtransTransactionId: `mock-tx-${bookingId}`,
+      },
+    });
+
+    // Transition booking status
+    await transitionBooking(bookingId, 'paid');
+
+    if (booking.bookingType === BookingType.immediate) {
+      await transitionBooking(bookingId, 'in_progress');
+    } else {
+      await transitionBooking(bookingId, 'scheduled');
+    }
+
+    success(res, {
+      bookingId,
+      status: 'paid',
+      message: 'Bypass pembayaran (Mock Settle) sukses!',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+

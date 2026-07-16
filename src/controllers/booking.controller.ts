@@ -511,3 +511,66 @@ export async function cancel(req: Request, res: Response, next: NextFunction): P
     next(err);
   }
 }
+
+export async function getChats(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    const booking = await prisma.booking.findUnique({
+      where: { id: id as string },
+      include: {
+        caregiver: true,
+      },
+    });
+
+    if (!booking) {
+      error(res, 'Booking tidak ditemukan', 'NOT_FOUND', 404);
+      return;
+    }
+
+    // Auth check
+    if (req.user!.role === 'user' && booking.userId !== req.user!.id) {
+      error(res, 'Anda tidak memiliki akses untuk chat booking ini', 'FORBIDDEN', 403);
+      return;
+    }
+
+    if (req.user!.role === 'caregiver') {
+      const caregiverProfile = await prisma.caregiver.findUnique({
+        where: { userId: req.user!.id },
+      });
+      if (!caregiverProfile || booking.caregiverId !== caregiverProfile.id) {
+        error(res, 'Anda tidak memiliki akses untuk chat booking ini', 'FORBIDDEN', 403);
+        return;
+      }
+    }
+
+    const chats = await prisma.chat.findMany({
+      where: { bookingId: booking.id },
+      orderBy: { sentAt: 'asc' },
+    });
+
+    const formattedChats = chats.map((chat) => {
+      let senderRole = 'system';
+      if (chat.senderId === booking.userId) {
+        senderRole = 'user';
+      } else if (booking.caregiver && chat.senderId === booking.caregiver.userId) {
+        senderRole = 'caregiver';
+      }
+
+      return {
+        id: chat.id,
+        bookingId: chat.bookingId,
+        senderId: chat.senderId,
+        senderRole,
+        message: chat.message,
+        photoUrl: chat.photoUrl,
+        sentAt: chat.sentAt.toISOString(),
+      };
+    });
+
+    success(res, formattedChats);
+  } catch (err) {
+    next(err);
+  }
+}
+

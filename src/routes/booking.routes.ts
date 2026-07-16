@@ -24,4 +24,7 @@ router.get('/:id/progress', authMiddleware, progressController.getProgress);
 router.post('/:id/report', authMiddleware, roleGuard('caregiver'), reportController.submitReport);
 router.post('/:id/rate', authMiddleware, roleGuard('user'), reportController.submitRating);
 
+// Chat history
+router.get('/:id/chats', authMiddleware, bookingController.getChats);
+
 export default router;
