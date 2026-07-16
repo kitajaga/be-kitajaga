@@ -7,16 +7,20 @@ import { prisma } from './config/database';
 import { logger } from './utils/logger';
 import { errorMiddleware } from './middlewares/error.middleware';
 import routes from './routes';
+import { initSockets } from './sockets';
 
 // ─── Express App ─────────────────────────────────────────────
 
 const app = express();
 const httpServer = createServer(app);
 
-// Socket.IO — will be initialized with auth middleware later (skill: websocket-realtime)
+// Socket.IO
 const io = new SocketServer(httpServer, {
   cors: { origin: '*', methods: ['GET', 'POST'] },
 });
+
+// Initialize socket handlers
+initSockets(io);
 
 // ─── Global Middleware ───────────────────────────────────────
 
