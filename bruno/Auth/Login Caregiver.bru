@@ -1,0 +1,18 @@
+meta {
+  name: Login Caregiver
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "rina@mail.com",
+    "password": "password123"
+  }
+}

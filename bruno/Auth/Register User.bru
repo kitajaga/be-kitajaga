@@ -1,0 +1,21 @@
+meta {
+  name: Register User
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/auth/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Zaki Ibrahim",
+    "email": "zaki@mail.com",
+    "phone": "081234567890",
+    "password": "password123",
+    "role": "user"
+  }
+}
