@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "bun run --watch src/app.ts",
-    "start": "bunx prisma migrate deploy && bun run src/app.ts",
+    "start": "bunx prisma migrate deploy && (bun run prisma/seed.ts || true) && bun run src/app.ts",
     "migrate:dev": "bunx prisma migrate dev",
     "migrate:deploy": "bunx prisma migrate deploy",
     "seed": "bun run prisma/seed.ts",
