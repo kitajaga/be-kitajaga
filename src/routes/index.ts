@@ -6,6 +6,7 @@ import bookingRoutes from './booking.routes';
 import caregiverRoutes from './caregiver.routes';
 import paymentRoutes from './payment.routes';
 import guidebookRoutes from './guidebook.routes';
+import userRoutes from './user.routes';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { roleGuard } from '../middlewares/role.middleware';
 
@@ -45,6 +46,7 @@ router.get('/docs', (_req: Request, res: Response) => {
 });
 
 router.use('/auth', authRoutes);
+router.use('/users', userRoutes);
 router.use('/patients', patientRoutes);
 router.use('/bookings', bookingRoutes);
 router.use('/caregivers', caregiverRoutes);
