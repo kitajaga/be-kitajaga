@@ -673,12 +673,71 @@
     "/caregivers/me": {
       "get": {
         "tags": ["Caregiver Profile"],
-        "summary": "Profil Caregiver",
-        "description": "Mengambil detail informasi profil caregiver yang sedang login.",
+        "summary": "Mengambil Profil Caregiver Aktif (Caregiver Only)",
+        "description": "Mengambil detail informasi profil perawat yang sedang login beserta status availability, rating, total completed bookings, dan working radius.",
         "security": [{ "bearerAuth": [] }],
         "responses": {
           "200": {
             "description": "Profil caregiver ditemukan"
+          }
+        }
+      }
+    },
+    "/users/me-caregiver": {
+      "patch": {
+        "tags": ["Caregiver Profile"],
+        "summary": "Memperbarui Profil Caregiver",
+        "description": "Memperbarui nama lengkap, nomor telepon, dan photoUrl profil perawat. Kolom email dan role bersifat permanen.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "example": "Suster Rina Baru" },
+                  "phone": { "type": "string", "example": "081298765432" },
+                  "photoUrl": { "type": "string", "example": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profil caregiver berhasil diperbarui"
+          }
+        }
+      }
+    },
+    "/users/me-caregiver/password": {
+      "patch": {
+        "tags": ["Caregiver Profile"],
+        "summary": "Mengubah Password Caregiver",
+        "description": "Mengubah password perawat. Wajib menyertakan password saat ini (currentPassword) untuk validasi keamanan.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["currentPassword", "newPassword"],
+                "properties": {
+                  "currentPassword": { "type": "string", "example": "password123" },
+                  "newPassword": { "type": "string", "example": "newpassword456" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password caregiver berhasil diperbarui"
+          },
+          "400": {
+            "description": "Password saat ini tidak cocok"
           }
         }
       }
@@ -737,22 +796,22 @@
         }
       }
     },
-    "/users/me": {
+    "/users/me-user": {
       "get": {
         "tags": ["User Profile"],
-        "summary": "Mengambil Profil User / Caregiver Aktif",
-        "description": "Mengambil data profil pengguna yang sedang login (nama, email, phone, photoUrl, role, dan data caregiverProfile jika role adalah caregiver). Berlaku untuk role user maupun caregiver.",
+        "summary": "Mengambil Profil User Client (User Only)",
+        "description": "Mengambil data profil user client yang sedang login (nama, email, phone, photoUrl, role).",
         "security": [{ "bearerAuth": [] }],
         "responses": {
           "200": {
-            "description": "Profil berhasil ditemukan"
+            "description": "Profil user berhasil ditemukan"
           }
         }
       },
       "patch": {
         "tags": ["User Profile"],
-        "summary": "Memperbarui Profil User / Caregiver",
-        "description": "Memperbarui nama lengkap, nomor telepon, dan photoUrl profil. Kolom email dan role bersifat permanen dan tidak dapat diubah.",
+        "summary": "Memperbarui Profil User Client",
+        "description": "Memperbarui nama lengkap, nomor telepon, dan photoUrl profil user client. Kolom email dan role bersifat permanen.",
         "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "required": true,
@@ -771,16 +830,16 @@
         },
         "responses": {
           "200": {
-            "description": "Profil berhasil diperbarui"
+            "description": "Profil user berhasil diperbarui"
           }
         }
       }
     },
-    "/users/me/password": {
+    "/users/me-user/password": {
       "patch": {
         "tags": ["User Profile"],
-        "summary": "Mengubah Password User / Caregiver",
-        "description": "Mengubah password pengguna. Wajib menyertakan password saat ini (currentPassword) untuk validasi keamanan sebelum meng-hash password baru.",
+        "summary": "Mengubah Password User Client",
+        "description": "Mengubah password user client. Wajib menyertakan password saat ini (currentPassword) untuk validasi keamanan.",
         "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "required": true,
@@ -799,7 +858,7 @@
         },
         "responses": {
           "200": {
-            "description": "Password berhasil diperbarui"
+            "description": "Password user berhasil diperbarui"
           },
           "400": {
             "description": "Password saat ini tidak cocok"
