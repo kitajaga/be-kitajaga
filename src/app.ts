@@ -30,6 +30,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // ─── Routes ──────────────────────────────────────────────────
 
+app.get('/', (_req, res) => {
+  res.redirect('/api');
+});
+
 app.use('/api', routes);
 
 // ─── Error Handler (must be last) ────────────────────────────
