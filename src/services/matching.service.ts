@@ -2,6 +2,7 @@ import { Caregiver, Booking, BookingType } from '@prisma/client';
 import { prisma } from '../config/database';
 import { getDistanceKm } from '../utils/distance';
 import { logger } from '../utils/logger';
+import { emitBookingOffer } from '../sockets';
 
 export type ScoredCaregiver = Caregiver & {
   distance: number;
@@ -139,6 +140,17 @@ export async function runMatching(bookingId: string): Promise<void> {
       await prisma.booking.update({
         where: { id: bookingId },
         data: { caregiverId: bestCandidate.id },
+      });
+
+      // Emit real-time WebSocket notification to caregiver's personal room
+      emitBookingOffer(bestCandidate.id, {
+        bookingId: booking.id,
+        bookingType: booking.bookingType,
+        status: booking.status,
+        patientName: booking.patient.name,
+        facilityName: booking.facilityName,
+        facilityAddress: booking.facilityAddress,
+        createdAt: booking.createdAt.toISOString(),
       });
 
       // Clear any existing timeout for this booking

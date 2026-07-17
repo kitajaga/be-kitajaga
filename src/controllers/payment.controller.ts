@@ -5,6 +5,7 @@ import { transitionBooking } from '../services/booking.service';
 import { success, error } from '../utils/apiResponse';
 import { BookingStatus, BookingType, PaymentStatus } from '@prisma/client';
 import { logger } from '../utils/logger';
+import { emitBookingStatusUpdate } from '../sockets';
 
 const FLAT_RATE_AMOUNT = 150000;
 
@@ -140,6 +141,7 @@ export async function handleWebhook(req: Request, res: Response, next: NextFunct
 
       // Immediate booking goes straight to 'in_progress'
       // Scheduled booking goes to 'scheduled' state
+      const finalStatus = booking.bookingType === BookingType.immediate ? 'in_progress' : 'scheduled';
       if (booking.bookingType === BookingType.immediate) {
         await transitionBooking(order_id, 'in_progress');
         logger.info(`Immediate booking ${order_id} transitioned to IN_PROGRESS`);
@@ -147,6 +149,14 @@ export async function handleWebhook(req: Request, res: Response, next: NextFunct
         await transitionBooking(order_id, 'scheduled');
         logger.info(`Scheduled booking ${order_id} transitioned to SCHEDULED`);
       }
+
+      // Emit real-time status update via Socket.IO
+      emitBookingStatusUpdate(order_id, {
+        bookingId: order_id,
+        status: finalStatus,
+        paymentStatus: PaymentStatus.held,
+        paidAt: new Date().toISOString(),
+      });
     } else if (isFailure) {
       // Mark payment status as failed
       await prisma.payment.update({
@@ -160,6 +170,12 @@ export async function handleWebhook(req: Request, res: Response, next: NextFunct
       // Transition booking status to 'payment_failed'
       await transitionBooking(order_id, 'payment_failed');
       logger.info(`Booking ${order_id} transitioned to PAYMENT_FAILED`);
+
+      emitBookingStatusUpdate(order_id, {
+        bookingId: order_id,
+        status: 'payment_failed',
+        paymentStatus: PaymentStatus.failed,
+      });
     }
 
     success(res, { message: 'OK' });
@@ -249,11 +265,20 @@ export async function mockSettle(req: Request, res: Response, next: NextFunction
     // Transition booking status
     await transitionBooking(bookingId, 'paid');
 
+    const finalStatus = booking.bookingType === BookingType.immediate ? 'in_progress' : 'scheduled';
     if (booking.bookingType === BookingType.immediate) {
       await transitionBooking(bookingId, 'in_progress');
     } else {
       await transitionBooking(bookingId, 'scheduled');
     }
+
+    // Emit real-time status update via Socket.IO
+    emitBookingStatusUpdate(bookingId, {
+      bookingId,
+      status: finalStatus,
+      paymentStatus: PaymentStatus.held,
+      paidAt: new Date().toISOString(),
+    });
 
     success(res, {
       bookingId,

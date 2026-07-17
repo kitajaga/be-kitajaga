@@ -8,7 +8,15 @@ export interface AuthenticatedSocket extends Socket {
 }
 
 // In-memory mapping of socket ID to booking rooms for clean management
+let ioInstance: Server | null = null;
+
+export function getIO(): Server | null {
+  return ioInstance;
+}
+
 export function initSockets(io: Server) {
+  ioInstance = io;
+
   io.use((socket: AuthenticatedSocket, next) => {
     const token = (socket.handshake.auth?.token || socket.handshake.headers?.token) as string;
     
@@ -25,8 +33,27 @@ export function initSockets(io: Server) {
     }
   });
 
-  io.on('connection', (socket: AuthenticatedSocket) => {
-    logger.info(`Socket connected: ${socket.id} (User: ${socket.user?.id}, Role: ${socket.user?.role})`);
+  io.on('connection', async (socket: AuthenticatedSocket) => {
+    if (!socket.user) return;
+    logger.info(`Socket connected: ${socket.id} (User: ${socket.user.id}, Role: ${socket.user.role})`);
+
+    // Automatically join personal user room
+    socket.join(`user:${socket.user.id}`);
+
+    // If caregiver, also join personal caregiver room
+    if (socket.user.role === 'caregiver') {
+      try {
+        const cg = await prisma.caregiver.findUnique({
+          where: { userId: socket.user.id },
+        });
+        if (cg) {
+          socket.join(`caregiver:${cg.id}`);
+          logger.info(`Caregiver socket ${socket.id} joined personal room caregiver:${cg.id}`);
+        }
+      } catch (err) {
+        logger.error(`Error joining caregiver room for socket ${socket.id}:`, err);
+      }
+    }
 
     // Join room for a specific booking
     socket.on('join_booking', (bookingId: string) => {
@@ -79,6 +106,27 @@ export function initSockets(io: Server) {
       logger.info(`Socket disconnected: ${socket.id}`);
     });
   });
+}
+
+/**
+ * Emit new booking offer event directly to caregiver's personal room
+ */
+export function emitBookingOffer(caregiverId: string, offerData: any) {
+  if (ioInstance) {
+    ioInstance.to(`caregiver:${caregiverId}`).emit('new_booking_offer', offerData);
+    logger.info(`Emitted new_booking_offer to caregiver:${caregiverId} for booking ${offerData.bookingId}`);
+  }
+}
+
+/**
+ * Broadcast booking status updates to booking room & user/caregiver rooms
+ */
+export function emitBookingStatusUpdate(bookingId: string, updateData: any) {
+  if (ioInstance) {
+    ioInstance.to(`booking:${bookingId}`).emit('booking_status_updated', updateData);
+    ioInstance.to(`booking:${bookingId}`).emit('booking_updated', updateData); // fallback alias
+    logger.info(`Emitted booking_status_updated to room booking:${bookingId}`);
+  }
 }
 
 /**
