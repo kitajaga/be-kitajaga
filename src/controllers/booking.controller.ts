@@ -129,6 +129,7 @@ export async function detail(req: Request, res: Response, next: NextFunction): P
         },
         payment: true,
         guidebook: true,
+        report: true,
       },
     });
 
@@ -182,6 +183,7 @@ export async function detail(req: Request, res: Response, next: NextFunction): P
         patient: {
           name: booking.patient.name,
         },
+        patientId: booking.patientId,
         caregiver: caregiverData,
         guidebookId: booking.guidebook?.id || null,
         payment: booking.payment
@@ -190,6 +192,14 @@ export async function detail(req: Request, res: Response, next: NextFunction): P
               amount: booking.payment.amount,
             }
           : null,
+        report: (booking as any).report
+          ? {
+              notes: (booking as any).report.notes,
+              conditionSummary: (booking as any).report.conditionSummary,
+            }
+          : null,
+        rating: (booking as any).rating ?? null,
+        review: (booking as any).review ?? null,
       });
       return;
     }
