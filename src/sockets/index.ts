@@ -133,7 +133,6 @@ export function emitBookingStatusUpdate(bookingId: string, updateData: any) {
  * Broadcast progress update events dynamically from REST Controllers
  */
 export function broadcastProgressUpdate(
-  io: Server,
   bookingId: string,
   progress: {
     status: string;
@@ -144,6 +143,12 @@ export function broadcastProgressUpdate(
     createdAt: Date;
   }
 ) {
+  const io = ioInstance;
+  if (!io) {
+    logger.warn(`broadcastProgressUpdate: socket ioInstance is not initialized yet. Skipping broadcast.`);
+    return;
+  }
+
   const statusLabels: Record<string, string> = {
     heading_to_patient: 'Menuju lokasi pasien',
     picked_up_patient: 'Jemput pasien',

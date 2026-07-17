@@ -3,7 +3,6 @@ import { prisma } from '../config/database';
 import { success, error } from '../utils/apiResponse';
 import { transitionBooking } from '../services/booking.service';
 import { broadcastProgressUpdate } from '../sockets';
-import { io } from '../app';
 import { ProgressStatus, BookingStatus } from '@prisma/client';
 
 export async function updateProgress(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -79,7 +78,7 @@ export async function updateProgress(req: Request, res: Response, next: NextFunc
     }
 
     // Broadcast update via Socket.IO
-    broadcastProgressUpdate(io, booking.id, progress);
+    broadcastProgressUpdate(booking.id, progress);
 
     success(res, {
       id: progress.id,
