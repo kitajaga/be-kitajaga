@@ -34,8 +34,12 @@ export async function create(req: Request, res: Response, next: NextFunction): P
       return;
     }
 
-    // Check if there is an active booking for this patient
-    const activeBooking = await prisma.booking.findFirst({
+    // Check if there is an overlapping active booking for this patient within +-24 hours window
+    const targetDate = scheduledAt ? new Date(scheduledAt) : new Date();
+    const windowStart = new Date(targetDate.getTime() - 24 * 60 * 60 * 1000);
+    const windowEnd = new Date(targetDate.getTime() + 24 * 60 * 60 * 1000);
+
+    const activeBookings = await prisma.booking.findMany({
       where: {
         patientId,
         status: {
@@ -44,8 +48,18 @@ export async function create(req: Request, res: Response, next: NextFunction): P
       },
     });
 
-    if (activeBooking) {
-      error(res, 'Pasien sudah memiliki booking aktif', 'DUPLICATE_BOOKING', 400);
+    const hasOverlap = activeBookings.some((existing) => {
+      const existingDate = existing.scheduledAt || existing.createdAt;
+      return existingDate >= windowStart && existingDate <= windowEnd;
+    });
+
+    if (hasOverlap) {
+      error(
+        res,
+        'Pasien sudah memiliki booking aktif pada tanggal/jadwal yang sama (±24 jam)',
+        'DUPLICATE_BOOKING',
+        400
+      );
       return;
     }
 
