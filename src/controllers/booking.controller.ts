@@ -192,14 +192,14 @@ export async function detail(req: Request, res: Response, next: NextFunction): P
               amount: booking.payment.amount,
             }
           : null,
-        report: (booking as any).report
+        report: booking.report
           ? {
-              notes: (booking as any).report.notes,
-              conditionSummary: (booking as any).report.conditionSummary,
+              notes: booking.report.notes,
+              conditionSummary: booking.report.conditionSummary,
             }
           : null,
-        rating: (booking as any).rating ?? null,
-        review: (booking as any).review ?? null,
+        rating: booking.report?.rating ?? null,
+        review: booking.report?.ratingNotes ?? null,
       });
       return;
     }
